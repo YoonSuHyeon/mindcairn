@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "chunkers": [
+    {
+      "name": "entity",
+      "matcher": { "annotation": "@Table|@Entity" },
+      "unit": "class",
+      "embeddingTextTemplate": "[ENTITY] {{className}} (table: {{tableName}})\nPackage: {{package}}\n{{kdoc}}\nColumns:\n{{properties}}",
+      "metadataKeys": ["className", "tableName", "package", "filePath"]
+    },
+    {
+      "name": "code_enum",
+      "matcher": { "superType": "CodeValueEnum" },
+      "unit": "enum",
+      "embeddingTextTemplate": "[CODE ENUM] {{className}}\nPackage: {{package}}\n{{kdoc}}\nValues:\n{{enumEntries}}",
+      "metadataKeys": ["className", "package", "filePath"]
+    },
+    {
+      "name": "service_method",
+      "matcher": { "pathGlob": ["**/service/**/*.kt", "**/application/**/*.kt"] },
+      "unit": "method",
+      "embeddingTextTemplate": "[SERVICE] {{className}}.{{methodName}}{{signature}}\n{{kdoc}}\n{{body}}",
+      "metadataKeys": ["className", "methodName", "filePath"]
+    },
+    {
+      "name": "repository_method",
+      "matcher": { "annotation": "@Repository", "pathGlob": ["**/repository/**/*.kt"] },
+      "unit": "method",
+      "embeddingTextTemplate": "[REPOSITORY] {{className}}.{{methodName}}{{signature}}\n{{kdoc}}\n{{body}}",
+      "metadataKeys": ["className", "methodName", "filePath"]
+    },
+    {
+      "name": "controller",
+      "matcher": { "annotation": "@RestController|@Controller" },
+      "unit": "class",
+      "embeddingTextTemplate": "[API] {{className}}\n{{annotations}}\n{{kdoc}}\n{{properties}}",
+      "metadataKeys": ["className", "package", "filePath"]
+    },
+    {
+      "name": "file_overview",
+      "matcher": { "pathGlob": ["**/*.kt"] },
+      "unit": "file",
+      "embeddingTextTemplate": "[FILE] {{fileName}}\nPackage: {{package}}\nPath: {{filePath}}\n\n{{fileHead}}",
+      "metadataKeys": ["filePath", "fileName", "package"]
+    }
+  ],
+  "storage": { "vector": "qdrant", "structured": "sqlite" },
+  "embedding": { "provider": "ollama", "model": "bge-m3", "dimensions": 1024 },
+  "retrievalQuota": {
+    "entity": 2,
+    "code_enum": 2,
+    "service_method": 3,
+    "repository_method": 2,
+    "controller": 2,
+    "file_overview": 3
+  }
+}

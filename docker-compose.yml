@@ -1,0 +1,27 @@
+# Mindcairn's dependency infra — a single Qdrant (vector DB) service.
+#
+#   start:  docker compose up -d
+#   stop:   docker compose down        (data persists in the volume)
+#   reset:  docker compose down -v      (also deletes the volume — all indexes are gone)
+#
+# mindcairn itself is not a container; run it on the host with Bun:
+#   bun run src/cli/index.ts init     # first-time setup (preset → analysis → indexing)
+#   bun run src/cli/index.ts serve <tag>
+#
+# Embeddings default to the host's Ollama (http://localhost:11434, model bge-m3) —
+#   ollama pull bge-m3
+# To run without Ollama, set EMBEDDING_PROVIDER=openai + OPENAI_API_KEY in .env.
+
+services:
+  qdrant:
+    image: qdrant/qdrant:latest
+    container_name: mindcairn-qdrant
+    restart: unless-stopped
+    ports:
+      - "6333:6333"   # HTTP API (used by mindcairn)
+      - "6334:6334"   # gRPC (not used by mindcairn — for other clients)
+    volumes:
+      - qdrant_storage:/qdrant/storage
+
+volumes:
+  qdrant_storage:

@@ -1,0 +1,52 @@
+{
+  "name": "mindcairn",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Self-hosted team brain for AI coding agents — your code, docs, and decisions in one hybrid-searchable (BM25 + dense) index, served over MCP",
+  "license": "MIT",
+  "keywords": [
+    "mcp",
+    "rag",
+    "codebase-search",
+    "hybrid-search",
+    "bm25",
+    "qdrant",
+    "self-hosted",
+    "claude",
+    "code-intelligence",
+    "bun"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/YoonSuHyeon/mindcairn.git"
+  },
+  "homepage": "https://github.com/YoonSuHyeon/mindcairn#readme",
+  "bugs": {
+    "url": "https://github.com/YoonSuHyeon/mindcairn/issues"
+  },
+  "bin": {
+    "mindcairn": "./src/cli/index.ts"
+  },
+  "scripts": {
+    "mindcairn": "bun run src/cli/index.ts",
+    "init": "bun run src/cli/index.ts init",
+    "search": "bun run src/cli/index.ts search",
+    "discover": "bun run src/cli/index.ts discover",
+    "analyze": "bun run src/cli/index.ts analyze",
+    "eval": "bun run src/cli/index.ts eval",
+    "serve": "bun run src/cli/index.ts serve",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.0",
+    "express": "^5.2.1",
+    "fast-glob": "^3.3.0",
+    "yaml": "^2.5.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "@types/express": "^5.0.6",
+    "typescript": "^5.5.0"
+  }
+}
