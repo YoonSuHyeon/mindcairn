@@ -55,11 +55,11 @@ const PACKAGE_RE = /(?:^|\n)\s*package\s+([\w.]+)/;
 const IMPORT_RE = /(?:^|\n)\s*import\s+([\w.*]+)/g;
 // (data |open |sealed |inner |abstract )* (class|interface|object|enum class) Name (<T>)? (...)?  (:  ...)? { ... }
 const CLASS_RE =
-  /(?:\n|^)((?:\/\*\*[\s\S]*?\*\/\s*\n)?)((?:^|\n)\s*(?:@[\w.]+(?:\([^)]*\))?\s*\n?)*)\s*(?:(?:public|internal|private|open|sealed|abstract|inner|final)\s+)*(data\s+class|enum\s+class|class|interface|object)\s+([A-Za-z_]\w*)\s*(?:<[^>]*>)?\s*(\([\s\S]*?\))?\s*(?::\s*([^{]+))?\s*\{/g;
+  /(?:\n|^)((?:\s*\/\*\*[\s\S]*?\*\/\s*)?)((?:^|\n)?\s*(?:@[\w.]+(?:\([^)]*\))?\s*\n?)*)\s*(?:(?:public|internal|private|open|sealed|abstract|inner|final)\s+)*(data\s+class|enum\s+class|class|interface|object)\s+([A-Za-z_]\w*)\s*(?:<[^>]*>)?\s*(\([\s\S]*?\))?\s*(?::\s*([^{]+))?\s*\{/g;
 const ANNOTATION_RE = /@([\w.]+)(\([^)]*\))?/g;
 // fun (suspend)? name(params): Type { ... }
 const FUN_RE =
-  /(?:\n|^)((?:\/\*\*[\s\S]*?\*\/\s*\n)?)((?:^|\n)\s*(?:@[\w.]+(?:\([^)]*\))?\s*\n?)*)\s*(suspend\s+)?(?:public|internal|private|protected|override|open|abstract|final)*\s*fun\s+([A-Za-z_]\w*)\s*(\([\s\S]*?\))\s*(?::\s*([\w<>?,. \[\]]+))?\s*(?=[\{=])/g;
+  /(?:\n|^)((?:\s*\/\*\*[\s\S]*?\*\/\s*)?)((?:^|\n)?\s*(?:@[\w.]+(?:\([^)]*\))?\s*\n?)*)\s*(suspend\s+)?(?:public|internal|private|protected|override|open|abstract|final)*\s*fun\s+([A-Za-z_]\w*)\s*(\([\s\S]*?\))\s*(?::\s*([\w<>?,. \[\]]+))?\s*(?=[\{=])/g;
 
 const MAX_BODY_BYTES = 4000;
 
