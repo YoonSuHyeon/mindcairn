@@ -103,7 +103,8 @@ export async function runMcpServer(tag: string) {
   const READONLY_TOOLS = new Set(['search_codebase', 'find_pattern', 'explain_module', 'get_chunk', 'report_issue']);
 
   // Write IP whitelist — MINDCAIRN_WRITE_IPS="<ip1>,<ip2>" (e.g. comma-separated VPN/Tailscale IPs)
-  // If unset, keep prior behavior (allow all unless readonly). localhost is always allowed.
+  // Secure-by-default: localhost is always allowed; any OTHER IP must be whitelisted explicitly.
+  // If unset, remote writes are blocked entirely (set MINDCAIRN_WRITE_IPS to allow remote writes).
   const writeIps = new Set(
     (process.env.MINDCAIRN_WRITE_IPS ?? '').split(',').map((s) => s.trim()).filter(Boolean),
   );
@@ -113,8 +114,7 @@ export async function runMcpServer(tag: string) {
     const n = normIp(ip);
     if (n === '127.0.0.1' || n === '::1') return true;
     if (readonly) return false;
-    if (writeIps.size === 0) return true;
-    return writeIps.has(n);
+    return writeIps.has(n); // unset whitelist → only localhost may write
   }
 
   // A fresh Server instance per session — the MCP SDK errors when one Server connects to multiple transports
@@ -406,6 +406,13 @@ export async function runMcpServer(tag: string) {
   const host = process.env.MINDCAIRN_MCP_HOST ?? '0.0.0.0';
 
   const app = express();
+  // Trust the proxy's X-Forwarded-For ONLY when explicitly opted in. Without this, behind a reverse
+  // proxy req.ip becomes the proxy's IP (usually 127.0.0.1) and the write IP whitelist would pass
+  // everyone. Unset = use the raw socket peer IP (no spoofing via forwarded headers).
+  if (process.env.MINDCAIRN_TRUST_PROXY) {
+    // 'loopback' | a specific IP | a hop count — see express "trust proxy" docs.
+    app.set('trust proxy', process.env.MINDCAIRN_TRUST_PROXY);
+  }
   app.use(express.json({ limit: '10mb' }));
 
   // Access log — records every HTTP call. Read calls are traceable too (for verification/debugging)
@@ -559,11 +566,21 @@ export async function runMcpServer(tag: string) {
     const probe = await fetch(`http://localhost:${port}/health`, {
       signal: AbortSignal.timeout(1500),
     });
-    if (probe.ok || probe.status > 0) {
-      console.error(`✗ Port ${port} is already in use by another server.`);
+    // Only treat it as "already in use" if the responder is actually a mindcairn server (its /health
+    // returns { ok, tag, collection }). An unrelated server answering on the port must not abort us.
+    let isMindcairn = false;
+    try {
+      const body = (await probe.json()) as { ok?: boolean; tag?: unknown };
+      isMindcairn = body?.ok === true && typeof body.tag === 'string';
+    } catch {
+      // non-JSON / unexpected body → not a mindcairn server
+    }
+    if (isMindcairn) {
+      console.error(`✗ Port ${port} is already serving a mindcairn instance.`);
       console.error(`  Set MINDCAIRN_MCP_PORT=<another port> and run again.`);
       process.exit(1);
     }
+    console.error(`⚠ Port ${port} responded to /health but is not a mindcairn server — proceeding (may fail to bind).`);
   } catch {
     // No response = port free → proceed normally
   }
@@ -756,6 +773,8 @@ function applyQuota(
   for (const h of hits) {
     if (out.length >= topK) break;
     const t = String(h.payload.type ?? '_other');
+    // Note: quota[t] === 0 means "exclude this type entirely" (used>=0 always true). Intentional —
+    // set a type's quota to 0 to drop it from results; use undefined/omit for "no limit".
     const limit = quota[t] ?? Number.MAX_SAFE_INTEGER;
     const used = counts[t] ?? 0;
     if (used >= limit) continue;

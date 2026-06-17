@@ -10,3 +10,4 @@ instances/verify-*/
 instances/gin/
 *.sqlite
 *.sqlite-journal
+.parking/

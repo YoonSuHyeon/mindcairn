@@ -195,6 +195,7 @@ curl -X DELETE http://localhost:6333/collections/mindcairn_my_app
 | `ANTHROPIC_API_KEY` | — | 있으면 API, 없으면 Claude CLI(OAuth) |
 | `MINDCAIRN_LLM` | 자동 | `claude-cli` 또는 `api` 강제 |
 | `MINDCAIRN_CLAUDE_BIN` | `claude` | Claude CLI 경로 |
+| `MINDCAIRN_LLM_TIMEOUT_MS` | `120000` | LLM 호출당 타임아웃(ms). 멈춘 CLI/API 호출을 죽여 인덱싱이 행되는 것 방지 |
 | `ENRICHER` | `auto` | 청크 라벨링: `claude-cli` / `api` / `off` / `auto` |
 | `MINDCAIRN_MODEL_LARGE` | (Claude Opus) | discovery/strategy 모델 |
 | `MINDCAIRN_MODEL_FAST` | (Claude Haiku) | enrich/eval 모델 |
@@ -203,7 +204,8 @@ curl -X DELETE http://localhost:6333/collections/mindcairn_my_app
 | `MINDCAIRN_MCP_PORT` | `8765` | MCP 서버 포트 |
 | `MINDCAIRN_MCP_HOST` | `0.0.0.0` | MCP 바인드 주소 |
 | `MINDCAIRN_READONLY` | off | `1` = 검색 도구 + `report_issue`만 노출 (팀 공유 인스턴스) |
-| `MINDCAIRN_WRITE_IPS` | — | 쓰기 도구 IP 화이트리스트 (콤마 구분) |
+| `MINDCAIRN_WRITE_IPS` | — | 쓰기 도구 IP 화이트리스트 (콤마 구분). localhost는 항상 허용, **미설정 시 원격 쓰기 차단**(localhost 전용) |
+| `MINDCAIRN_TRUST_PROXY` | — | 프록시의 `X-Forwarded-For`를 신뢰해 `req.ip`를 실제 클라이언트로 인식. `loopback` / IP / hop 수. **리버스 프록시 뒤일 때만 설정** — 아니면 클라이언트가 IP를 위조해 `MINDCAIRN_WRITE_IPS`를 우회할 수 있음 |
 | `MINDCAIRN_OUTPUT_DIR` | `.mindcairn` | 인덱스/preset 저장 위치 |
 
 ## Extending — 회사별 커스터마이즈

@@ -195,6 +195,7 @@ Everything is optional — defaults work with local Ollama + Claude CLI. See [`.
 | `ANTHROPIC_API_KEY` | — | If set, LLM calls use the API; otherwise the Claude CLI (OAuth) |
 | `MINDCAIRN_LLM` | auto | Force `claude-cli` or `api` |
 | `MINDCAIRN_CLAUDE_BIN` | `claude` | Path to the Claude CLI binary |
+| `MINDCAIRN_LLM_TIMEOUT_MS` | `120000` | Per-call LLM timeout (ms); a hung CLI/API call is killed so indexing can't wedge |
 | `ENRICHER` | `auto` | Chunk labeling: `claude-cli` / `api` / `off` / `auto` |
 | `MINDCAIRN_MODEL_LARGE` | (Claude Opus) | Model for discovery/strategy |
 | `MINDCAIRN_MODEL_FAST` | (Claude Haiku) | Model for enrich/eval |
@@ -203,7 +204,8 @@ Everything is optional — defaults work with local Ollama + Claude CLI. See [`.
 | `MINDCAIRN_MCP_PORT` | `8765` | MCP server port |
 | `MINDCAIRN_MCP_HOST` | `0.0.0.0` | MCP bind address |
 | `MINDCAIRN_READONLY` | off | `1` = expose search tools + `report_issue` only (shared team instance) |
-| `MINDCAIRN_WRITE_IPS` | — | Comma-separated IP allowlist for write tools |
+| `MINDCAIRN_WRITE_IPS` | — | Comma-separated IP allowlist for write tools. localhost always allowed; **if unset, remote writes are blocked** (localhost-only) |
+| `MINDCAIRN_TRUST_PROXY` | — | Trust the proxy's `X-Forwarded-For` so `req.ip` is the real client. `loopback` / IP / hop-count. **Set only when behind a reverse proxy** — otherwise clients could spoof their IP and bypass `MINDCAIRN_WRITE_IPS` |
 | `MINDCAIRN_OUTPUT_DIR` | `.mindcairn` | Where indexes/presets are stored |
 
 ## Extending

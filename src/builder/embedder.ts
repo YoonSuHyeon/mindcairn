@@ -33,11 +33,20 @@ export function resolveEmbeddingSpec(modelOverride?: string): EmbeddingSpec {
   }
   const d = DEFAULTS[provider];
   const model = modelOverride ?? process.env.MINDCAIRN_EMBED_MODEL ?? d.model;
-  const dimensions = process.env.MINDCAIRN_EMBED_DIM
-    ? Number(process.env.MINDCAIRN_EMBED_DIM)
-    : model === d.model || model === `${d.model}:latest`
-      ? d.dimensions
-      : d.dimensions; // for a custom model, specify dimensions explicitly via MINDCAIRN_EMBED_DIM
+  const isDefaultModel = model === d.model || model === `${d.model}:latest`;
+  let dimensions: number;
+  if (process.env.MINDCAIRN_EMBED_DIM) {
+    dimensions = Number(process.env.MINDCAIRN_EMBED_DIM);
+  } else if (isDefaultModel) {
+    dimensions = d.dimensions;
+  } else {
+    // A custom model whose dimensions we can't infer — refuse to guess. Silently falling back to the
+    // default dimensions causes a dimension mismatch that breaks search without ever erroring.
+    throw new Error(
+      `Custom embedding model "${model}" requires MINDCAIRN_EMBED_DIM to be set explicitly ` +
+        `(default ${d.model} is ${d.dimensions}d). Set MINDCAIRN_EMBED_DIM=<dim> and re-index.`,
+    );
+  }
   return { provider, model, dimensions };
 }
 

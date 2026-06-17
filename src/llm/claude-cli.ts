@@ -60,11 +60,30 @@ export async function callClaude(opts: ClaudeOptions): Promise<ClaudeResponse<st
   proc.stdin.write(promptText);
   proc.stdin.end();
 
-  const [stdout, stderr] = await Promise.all([
-    new Response(proc.stdout).text(),
-    new Response(proc.stderr).text(),
-  ]);
-  const exitCode = await proc.exited;
+  // Guard against a hung subprocess wedging the whole indexing run. On timeout, kill and throw.
+  const timeoutMs = Number(process.env.MINDCAIRN_LLM_TIMEOUT_MS ?? 120_000);
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    proc.kill();
+  }, timeoutMs);
+
+  let stdout: string;
+  let stderr: string;
+  let exitCode: number;
+  try {
+    [stdout, stderr] = await Promise.all([
+      new Response(proc.stdout).text(),
+      new Response(proc.stderr).text(),
+    ]);
+    exitCode = await proc.exited;
+  } finally {
+    clearTimeout(timer);
+  }
+
+  if (timedOut) {
+    throw new Error(`claude CLI timed out after ${timeoutMs}ms (MINDCAIRN_LLM_TIMEOUT_MS).`);
+  }
 
   if (exitCode !== 0) {
     throw new Error(`claude CLI failed (exit ${exitCode}):\n${stderr || stdout}`);

@@ -70,8 +70,26 @@ export function parseKotlin(content: string): ParsedFile {
     imports.push(m[1]);
   }
   const classes = parseClasses(content);
-  const topLevelFunctions = parseTopLevelFuns(content);
+  // Mask class bodies before scanning for top-level funs, otherwise member functions get extracted
+  // twice (once here, once via parseMembers) → duplicate chunks / noise / cost.
+  const topLevelFunctions = parseTopLevelFuns(maskClassBodies(content));
   return { pkg, imports, classes, topLevelFunctions };
+}
+
+/** Replace each class body (the `{...}` after a class/object/interface header) with spaces, preserving
+ *  length so byte offsets stay valid. Leaves top-level declarations intact for top-level fun scanning. */
+function maskClassBodies(content: string): string {
+  const chars = content.split('');
+  for (const m of content.matchAll(CLASS_RE)) {
+    const bodyStart = (m.index ?? 0) + m[0].length - 1; // position of '{'
+    const bodyEnd = findMatchingBrace(content, bodyStart);
+    if (bodyEnd > bodyStart) {
+      for (let i = bodyStart + 1; i < bodyEnd; i++) {
+        if (chars[i] !== '\n') chars[i] = ' '; // keep newlines so line-based context is unaffected
+      }
+    }
+  }
+  return chars.join('');
 }
 
 function parseClasses(content: string): ParsedClass[] {
@@ -106,8 +124,7 @@ function parseClasses(content: string): ParsedClass[] {
 }
 
 function parseTopLevelFuns(content: string): ParsedFunction[] {
-  // Risk of also catching fun inside class bodies — for now catch all fun and let the caller handle it.
-  // Simple PoC: extract fun from the whole file.
+  // Caller passes content with class bodies masked, so only genuine top-level funs remain.
   return parseFunsIn(content);
 }
 

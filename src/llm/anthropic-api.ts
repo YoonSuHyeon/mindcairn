@@ -9,6 +9,7 @@ import { extractJson, type ClaudeOptions, type ClaudeResponse } from './claude-c
 
 const API_BASE = process.env.ANTHROPIC_BASE_URL ?? 'https://api.anthropic.com';
 const MAX_TOKENS = Number(process.env.MINDCAIRN_API_MAX_TOKENS ?? 8192);
+const TIMEOUT_MS = Number(process.env.MINDCAIRN_LLM_TIMEOUT_MS ?? 120_000);
 
 export async function callAnthropicApi(opts: ClaudeOptions): Promise<ClaudeResponse<string>> {
   const key = process.env.ANTHROPIC_API_KEY;
@@ -39,8 +40,12 @@ export async function callAnthropicApi(opts: ClaudeOptions): Promise<ClaudeRespo
         ...(opts.systemPrompt ? { system: opts.systemPrompt } : {}),
         messages: [{ role: 'user', content: promptText }],
       }),
+      signal: AbortSignal.timeout(TIMEOUT_MS),
     });
   } catch (e) {
+    if ((e as Error).name === 'TimeoutError') {
+      throw new Error(`Anthropic API timed out after ${TIMEOUT_MS}ms (MINDCAIRN_LLM_TIMEOUT_MS).`);
+    }
     throw new Error(`Failed to connect to the Anthropic API (${API_BASE}): ${(e as Error).message}`);
   }
 
@@ -56,7 +61,17 @@ export async function callAnthropicApi(opts: ClaudeOptions): Promise<ClaudeRespo
     model: string;
     content: Array<{ type: string; text?: string }>;
     usage?: { input_tokens?: number; output_tokens?: number };
+    stop_reason?: string;
   };
+
+  // A truncated response yields invalid/partial JSON downstream — fail loudly so the retry layer
+  // can react (or the operator can raise the cap), rather than silently degrading quality.
+  if (json.stop_reason === 'max_tokens') {
+    throw new Error(
+      `Anthropic API response truncated (stop_reason=max_tokens, max_tokens=${MAX_TOKENS}). ` +
+        `Reduce batch size or raise MINDCAIRN_API_MAX_TOKENS.`,
+    );
+  }
 
   const text = json.content
     .filter((b) => b.type === 'text' && typeof b.text === 'string')
