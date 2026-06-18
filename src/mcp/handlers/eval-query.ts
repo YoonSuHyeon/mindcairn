@@ -15,6 +15,7 @@ import { searchPoints } from '../../builder/qdrant.ts';
 import type { ChunkStore } from '../../builder/sqlite-store.ts';
 import type { IndexingStrategy } from '../../types.ts';
 import { config } from '../../config.ts';
+import { scoreEvalResult } from './eval-score.ts';
 
 export const EvalQueryArgs = z.object({
   query: z.string(),
@@ -40,50 +41,16 @@ export async function handleEvalQuery(
   const hitIds = hits.map((h) => String(h.payload.chunkId ?? ''));
   const stored = store.getMany(hitIds);
 
-  // 1. recall@K — expected chunkId
-  let recallChunkId = 0;
-  if (args.expectedChunkIds?.length) {
-    const found = hitIds.filter((id) => args.expectedChunkIds!.includes(id));
-    recallChunkId = found.length / args.expectedChunkIds.length;
-  }
-
-  // 2. type-distribution match
-  let typeMatchRatio = 0;
-  if (args.expectedTypes?.length) {
-    const hitTypes = stored.map((s) => s.type);
-    const matched = hitTypes.filter((t) => args.expectedTypes!.includes(t));
-    typeMatchRatio = matched.length / topK;
-  }
-
-  // 3. keyword match — whether expected keywords appear in raw_content + label
-  let keywordHitRatio = 0;
-  if (args.expectedKeywords?.length) {
-    const haystack = stored
-      .map((s) => `${s.enrichedLabel ?? ''}\n${s.rawContent}`.toLowerCase())
-      .join('\n');
-    const found = args.expectedKeywords.filter((k) => haystack.includes(k.toLowerCase()));
-    keywordHitRatio = found.length / args.expectedKeywords.length;
-  }
-
-  // 4. MRR — rank of the first expected chunkId
-  let mrr = 0;
-  if (args.expectedChunkIds?.length) {
-    for (let i = 0; i < hitIds.length; i++) {
-      if (args.expectedChunkIds.includes(hitIds[i])) {
-        mrr = 1 / (i + 1);
-        break;
-      }
-    }
-  }
-
-  // overall score (average)
-  const scoreParts: number[] = [];
-  if (args.expectedChunkIds?.length) scoreParts.push(recallChunkId, mrr);
-  if (args.expectedTypes?.length) scoreParts.push(typeMatchRatio);
-  if (args.expectedKeywords?.length) scoreParts.push(keywordHitRatio);
-  const overall = scoreParts.length
-    ? scoreParts.reduce((a, b) => a + b, 0) / scoreParts.length
-    : 0;
+  const { recallChunkId, typeMatchRatio, keywordHitRatio, mrr, overall } = scoreEvalResult(
+    hitIds,
+    stored,
+    topK,
+    {
+      expectedChunkIds: args.expectedChunkIds,
+      expectedTypes: args.expectedTypes,
+      expectedKeywords: args.expectedKeywords,
+    },
+  );
 
   // record the result (jsonl)
   const evalDir = join(process.cwd(), config.output.dir, tag);
