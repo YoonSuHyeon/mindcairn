@@ -4,6 +4,8 @@
 
 [**한국어 README**](README.ko.md) | **English**
 
+[![CI](https://github.com/YoonSuHyeon/mindcairn/actions/workflows/ci.yml/badge.svg)](https://github.com/YoonSuHyeon/mindcairn/actions/workflows/ci.yml)
+
 ![mindcairn demo — hybrid search answering in the terminal](docs/assets/demo.gif)
 
 

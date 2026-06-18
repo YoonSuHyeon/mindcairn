@@ -4,6 +4,8 @@
 
 **한국어** | [English](README.md)
 
+[![CI](https://github.com/YoonSuHyeon/mindcairn/actions/workflows/ci.yml/badge.svg)](https://github.com/YoonSuHyeon/mindcairn/actions/workflows/ci.yml)
+
 ![mindcairn 데모 — 터미널에서 하이브리드 검색](docs/assets/demo.gif)
 
 
